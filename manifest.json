@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Group Tabs+",
+  "description": "Reinvents the way group tabs work where now a window is saved on the fly and can be opened to resume all work as normal.",
+  "version": "1.0",
+  "permissions": ["tabs", "storage"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon-16.png",
+      "48": "icon-48.png",
+      "128": "icon-128.png"
+    }
+  },
+  "icons": {
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  }
+}
