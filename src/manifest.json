@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Group Tabs+",
+  "name": "Dynamic Windows",
   "description": "Reinvents the way group tabs work where now a window is saved on the fly and can be opened to resume all work as normal.",
   "version": "1.0",
   "permissions": ["tabs", "storage"],
