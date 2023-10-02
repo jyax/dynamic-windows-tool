@@ -105,6 +105,10 @@ function createWindowButton(savedWindow) {
     return container;
 }
 
+
+/// CURRENTLY DOES NOT WORK PROPERLY --- NEEDS TO BE UPDATED TO CURRENT HYBRID STORAGE INFORMATION
+/// NEED TO TAKE INTO ACCOUNT THAT WINDOW ID SHOULD NOT CHECKED AGAINST OLD CLOSED WINDOWS
+/// ONLY WHEN CHECKING IF ALREADY OPEN
 function openSavedWindow(savedWindow) {
     const windowIdToOpen = savedWindow.windowId;
 
