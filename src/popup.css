@@ -1,14 +1,16 @@
 /* Style the body of the popup */
 body {
-    width: 250px;
+    width: 200px;
+    max-height: 400px;
     padding: 10px;
     font-family: Arial, sans-serif;
-    background-color: hsl(210, 50%, 50%); /* Light gray background color */
+    background-color: hsl(214, 72%, 13%);; /* Light gray background color */
     border-radius: 10px; /* Slightly rounded corners */
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
     opacity: 0; /* Start with 0 opacity for fade-in effect */
-    animation: fadeIn 0.9s ease-in-out forwards; /* Fade-in animation */
+    animation: fadeIn 1.5s ease-in-out forwards; /* Fade-in animation */
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-content: center;
 }
@@ -18,75 +20,91 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: hsl(210, 80%, 30%); /* Green background color */
-    color: #fff; /* White text color */
+    background-color: hsl(214, 72%, 33%);
+    color: hsl(214, 100%, 100%); /* White text color */
     border: none;
     border-radius: 5px; /* Rounded corners */
     padding: 10px 20px; /* Adjust padding as needed */
     cursor: pointer;
-    transition: background-color 0.3s ease; /* Smooth color transition */
-    /* Optional: Add a hover effect */
-    &:hover {
-        background-color: hsl(210, 80%, 20%); /* Darker green on hover */
-    }
+    transition: background-color 0.3s ease;
+}
+#save-window:hover {
+    background-color: hsl(210, 80%, 20%);
 }
 
 
 
 /* Style the list of saved windows */
 #window-list {
-    margin-top: 20px;
+    flex: fit-content;
+    margin-bottom: 5vh;
 }
 
 /* Style the buttons for saved windows */
 #window-list button {
     display: flex; /* Use flexbox to center content vertically */
-    background-color: #fff; /* White background color */
-    border: 1px solid #ccc;
+    background-color: hsl(214, 72%, 33%); /* White background color */
+    border: 1px solid hsl(214, 72%, 33%);
     padding: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 5vh;
     cursor: pointer;
     text-align: left;
     overflow: hidden;
     white-space: nowrap;
     border-radius: 5px; /* Rounded corners */
-    transition: background-color 0.3s ease; /* Smooth color transition */
-}
-
-/* Change button color on hover */
-#window-list button:hover {
-    background-color: #f0f0f0; /* Light gray background color on hover */
 }
 
 /* Style the button container */
 .button-container {
     display: flex; /* Use flexbox to horizontally align children */
-    align-items: center; /* Vertically center content */
-    border: 1px solid red;
+    align-items: center;
+    margin: 0 0 2vh 0;
+    padding: 0;
 }
 
-/*Style the nested button container */
-.nested-button-container {
-    display: flex; /* Using flex to fit both button and x button */
-    alight-items: center;
-    border: 1px solid yellow;
+.button-container .window-button {
+    display: flex;
+    align-content: center;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0;
+    width: 100%;
+    height: 50%;
+    max-height: 35px;
+    background-color: hsl(214, 80%, 33%);
+    border-radius: 5px;
+    color: hsl(214, 100%, 100%);
+    flex-grow: 1;
+    transition: background-color 0.5s ease;
 }
 
 /* Style the "Delete" button */
-.delete-button {
-    background-color: #ff5b5b; /* Red background color */
+.button-container #delete-button {
+    display: flex;
+    max-width: 25%;
+    height: 100%;
+    background-color: hsl(214, 80%, 33%);
     color: #fff;
     border: none;
-    padding: 0.5px 0.5px;
     cursor: pointer;
-    border-radius: 5px; /* Rounded corners */
-    font-size: 12px;
+    border-radius: 5px;
+    font-size: 30px;
+    transition: background-color 0.5s ease;
+    align-items: center;
+    margin-top: 5%;
+    margin-right: -6%;
+    justify-self: flex-end;
+    align-self: flex-end;
+}
+
+/* Change button color on hover for both buttons */
+.button-container:hover .window-button, .button-container:hover #delete-button {
+    background-color: hsl(210, 80%, 20%);
 }
 
 .delete-button i {
     font-size: 10px;
 }
-
 /* Style the text container */
 .text-container {
     flex-grow: 1; /* Allow text to take remaining space */
