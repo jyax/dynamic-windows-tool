@@ -226,27 +226,41 @@ function handleTabRemoved(tabId, removeInfo) {
 }
 
 chrome.windows.onRemoved.addListener( function(windowId) {
-    // Save changes before closing
-    saveStorage(function () {
-        // Close the window after saving
-        chrome.windows.remove(windowId, function () {
-            console.log("Window closed after saving.");
-        });
-    });
+    let isSavedWindow = false
 
-    // // Show a confirm dialog to the user
-    // if (confirm("Do you want to save changes before closing?")) {
-    //     // Save changes before closing
-    //     saveStorage(function() {
-    //         // Close the window after saving
-    //         chrome.windows.remove(windowId, function() {
-    //             console.log("Window closed after saving.");
-    //         });
+    chrome.runtime.sendMessage({message: "Window ID being closed:", obj: windowId});
+
+    // Loop through the windowsStorage array to check if the windowId exists
+    for (let i = 0; i < windowsStorage.length; i++) {
+        if (windowsStorage[i].windowId === windowId) {
+            isSavedWindow = true;
+            break;
+        }
+    }
+
+    if (isSavedWindow) {
+        // Show a confirm dialog to the user
+        if (confirm("Do you want to save changes before closing?")) {
+            // Save changes before closing
+            saveStorage(function() {
+                // Close the window after saving
+                chrome.windows.remove(windowId, function() {
+                    chrome.runtime.sendMessage({message: "Window closed after saving.", obj: null});
+                });
+            });
+        } else {
+            // Close the window without saving
+            chrome.windows.remove(windowId, function() {
+                chrome.runtime.sendMessage({ message:"Window closed without saving.", obj: null});
+            });
+        }
+    }
+    // // Save changes before closing
+    // saveStorage(function () {
+    //     // Close the window after saving
+    //     chrome.windows.remove(windowId, function () {
+    //         console.log("Window closed after saving.");
     //     });
-    // } else {
-    //     // Close the window without saving
-    //     chrome.windows.remove(windowId, function() {
-    //         console.log("Window closed without saving.");
-    //     });
-    // }
+    // });
+
 })
