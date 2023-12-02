@@ -29,10 +29,8 @@ saveButton.addEventListener("click", () => {
 
 // Function to update the displayed list of saved windows in the popup
 function updateWindowListUI() {
-
     // Clear the existing list of saved windows
     windowList.innerHTML = "";
-
     // Load saved windows from storage and display them
     loadSavedWindows();
 }
@@ -51,7 +49,6 @@ function loadSavedWindows() {
 function saveWindow(savedWindow) {
     // This checks if in the localStorage the current window is already saved based on the windowId
     const existingIndex = windowsStorage.findIndex((win) => win.windowId === savedWindow.windowId);
-
 
     if (existingIndex !== -1) {
         windowsStorage[existingIndex] = savedWindow;
@@ -113,10 +110,6 @@ function createWindowButton(savedWindow) {
     return container;
 }
 
-
-/// CURRENTLY DOES NOT WORK PROPERLY --- NEEDS TO BE UPDATED TO CURRENT HYBRID STORAGE INFORMATION
-/// NEED TO TAKE INTO ACCOUNT THAT WINDOW ID SHOULD NOT CHECKED AGAINST OLD CLOSED WINDOWS
-/// ONLY WHEN CHECKING IF ALREADY OPEN
 function openSavedWindow(savedWindow) {
     loadStorage();
 
@@ -177,8 +170,38 @@ function deleteSavedWindow(savedWindow) {
     }
 }
 
-// Monitor tab creation to update saved windows
-chrome.tabs.onCreated.addListener(handleTabCreated);
+// Monitor all form of events for tab creation, deletion, and other modifications
+
+chrome.tabs.onCreated.addListener(isSavedWindow);   //  callback => Tab object
+
+chrome.tabs.onRemoved.addListener(isSavedWindow);   //  callback => tabId, removeInfo object [ isWindowClosing, windowId ]
+
+// Needs to handle attachInfo object, just check if windowID is a saved window, recall saved window info and overwrite previous save
+chrome.tabs.onAttached.addListener(isSavedWindow);  //  callback => tabId, attachInfo object [ newPosition, newWindowId ]
+
+// Needs to handle detachInfo object, just check if windowID is a saved window, recall saved window info and overwrite previous save
+chrome.tabs.onDetached.addListener(isSavedWindow);  //  callback => tabId, detachInfo object [ oldPosition, oldWindowId ]
+
+// Needs to handle moveInfo object, just check if windowID is a saved window, recall saved window info and overwrite previous save
+chrome.tabs.onMoved.addListener(isSavedWindow);     //  callback => tabId, moveInfo object [ fromIndex, toIndex, windowId ]
+
+// SPECIAL LISTENER, THIS ONE IS IMPORTANT AS TAB ID'S CAN CONSTANTLY CHANGE DUE TO PRE-RENDERING, NEED TO HANDLE THIS
+chrome.tabs.onReplaced.addListener(isSavedWindow)   //  callback => addedTabId, removedTabId                                                                                    NOT SURE HOW IM SUPPOSED TO SOLVE GETTING THE TAB OBJECT OR WINDOW ID YET
+
+// Need to handle changeInfo object, just pull tab's windowID and then check if window is a saved window, recall saved window info and overwrite previous save
+chrome.tabs.onUpdated.addListener(isSavedWindow);   //  callback => tabId, changeInfo object [ All Tab object info besides windowId ]                                           NOT SURE HOW IM SUPPOSED TO SOLVE GETTING THE TAB OBJECT OR WINDOW ID YET
+
+// Provides ZoomChangeInfo object, take tabID and then grab windowID, then check if saved window, if so then overwrite previous save with new info
+chrome.tabs.onZoomChange.addListener(isSavedWindow) //  callback => ZoomChangeInfo object [ newZoomFactor, oldZoomFactor, tabId, zoomSettings ]                                 NOT SURE HOW IM SUPPOSED TO SOLVE GETTING THE TAB OBJECT OR WINDOW ID YET
+
+
+function isSavedWindow(windowId) {
+    if (windowId === 0) {
+        let variable = 0;
+    }
+}
+
+function
 
 function handleTabCreated(tab) {
     loadStorage();
