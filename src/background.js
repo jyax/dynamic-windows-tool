@@ -18,4 +18,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     } else {
         console.log(message.message, message.obj);
     }
+
+    sendResponse({ status: "Received", detail: message.message});
+    return true;
 });

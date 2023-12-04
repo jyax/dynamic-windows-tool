@@ -5,13 +5,31 @@ const saveButton = document.getElementById("save-window");
 let windowsStorage = [];
 
 function loadStorage() {
-    chrome.runtime.sendMessage({message:"Loading from Local Storage", obj: null});
-    windowsStorage = JSON.parse(localStorage.getItem("windows"))
+    try {
+        const storedData = localStorage.getItem('windows');
+        windowsStorage = storedData ? JSON.parse(storedData) : [];
+    } catch (err) {
+        console.log('Error parsing windows from localStorage: ', err);
+        windowsStorage = [];
+    }
+    logEvent({message:"Loading from Local Storage", obj: windowsStorage})
+        .then(r => {
+            console.log('Message successfully sent', r);
+        })
+        .catch(err => {
+            console.error('Error occurred while sending message: ', err);
+        });
 }
 
 function saveStorage() {
-    chrome.runtime.sendMessage({message:"Saving to Local Storage", obj: null});
-    localStorage.setItem("windows", JSON.stringify(windowsStorage));
+    localStorage.setItem('windows', JSON.stringify(windowsStorage));
+    logEvent({message:"Saving to Local Storage", obj: windowsStorage})
+        .then(r => {
+            console.log('Message successfully sent', r);
+        })
+        .catch(err => {
+            console.error('Error occurred while sending message: ', err);
+        });
 }
 
 // Save the current window when the "Save" button is clicked
@@ -21,11 +39,29 @@ saveButton.addEventListener("click", () => {
 
         if (windowName) {
             const savedWindow = { name: windowName, tabs: tabs, windowId: tabs[0].windowId };
-            chrome.runtime.sendMessage({message: "Saving window:", obj: savedWindow}); // Log saved window
+            logEvent({message: "Saving window:", obj: savedWindow}) // Log Saved Window
+                .then(r => {
+                    console.log('Message successfully sent', r);
+                })
+                .catch(err => {
+                    console.error('Error occurred while sending message: ', err);
+                });
             saveWindow(savedWindow);
         }
     });
 });
+
+function logEvent(message) {
+    return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(message, function(response) {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError)
+            } else {
+                resolve(response);
+            }
+        });
+    });
+}
 
 // Function to update the displayed list of saved windows in the popup
 function updateWindowListUI() {
@@ -38,7 +74,13 @@ function updateWindowListUI() {
 // Load saved windows from storage and display them
 function loadSavedWindows() {
     loadStorage();
-    chrome.runtime.sendMessage({message: "Loaded saved windows:", obj: windowsStorage}); // Log loaded windows
+    logEvent({message: "Loaded saved windows:", obj: windowsStorage}) // Log loaded windows
+        .then(r => {
+            console.log('Message successfully sent', r);
+        })
+        .catch(err => {
+            console.error('Error occurred while sending message: ', err);
+        });
     windowsStorage.forEach((window) => {
         const button = createWindowButton(window);
         windowList.appendChild(button);
@@ -48,7 +90,7 @@ function loadSavedWindows() {
 // Function to save a window to storage
 function saveWindow(savedWindow) {
     // This checks if in the localStorage the current window is already saved based on the windowId
-    const existingIndex = windowsStorage.findIndex((win) => win.windowId === savedWindow.windowId);
+    const existingIndex = fetchIndex(savedWindow.id)
 
     if (existingIndex !== -1) {
         windowsStorage[existingIndex] = savedWindow;
@@ -58,7 +100,13 @@ function saveWindow(savedWindow) {
     }
 
     saveStorage();
-    chrome.runtime.sendMessage({message: "Saved window:", obj: savedWindow}); // Log saved window
+    logEvent({message: "Saved window:", obj: savedWindow}) // Log saved window
+        .then(r => {
+            console.log('Message successfully sent', r);
+        })
+        .catch(err => {
+            console.error('Error occurred while sending message: ', err);
+        });
 
     // Now, update the displayed list of saved windows in the popup
     updateWindowListUI();
@@ -111,43 +159,87 @@ function createWindowButton(savedWindow) {
 }
 
 function openSavedWindow(savedWindow) {
-    loadStorage();
 
     const windowIdToOpen = savedWindow.windowId;
-    chrome.runtime.sendMessage({message: "window to open:", obj:windowIdToOpen});
+    logEvent({message: "window to open:", obj: savedWindow})
+        .then(r => {
+            console.log('Message successfully sent', r);
+        })
+        .catch(err => {
+            console.error('Error occurred while sending message: ', err);
+        });
     let openWindow = false;
 
     chrome.windows.getAll({ populate: false }, (windows) => {
         for (const window of windows) {
             const windowId = window.id;
-            chrome.runtime.sendMessage({message: "current window.id to check", obj: windowId});
+            logEvent({message: "current window.id to check", obj: windowId})
+                .then(r => {
+                    console.log('Message successfully sent', r);
+                })
+                .catch(err => {
+                    console.error('Error occurred while sending message: ', err);
+                });
             if (windowIdToOpen === windowId) {
                 openWindow = true;
-                chrome.runtime.sendMessage({message: "window id found in windows!:", obj: openWindow});
+                logEvent({message: "window id found in windows!:", obj: openWindow})
+                    .then(r => {
+                        console.log('Message successfully sent', r);
+                    })
+                    .catch(err => {
+                        console.error('Error occurred while sending message: ', err);
+                    });
             }
         }
-
+        logEvent({message: "Is window currently open: ", obj: openWindow})
+            .then(r => {
+                console.log('Message successfully sent', r);
+            })
+            .catch(err => {
+                console.error('Error occurred while sending message: ', err);
+            });
         if (!openWindow) {
             // If the window does not exist, create a new window with the saved tabs
             const tabUrls = savedWindow.tabs.map((tab) => tab.url);
             chrome.windows.create({ url: tabUrls, focused: true }, (newWindow) => {
                 // Update the saved window object with the new window ID
-                let newSave = {name: savedWindow.name, tabs: savedWindow.tabs, windowId: newWindow.id};
-                windowsStorage[windowsStorage.findIndex(saveWindow)] = newSave;
-                chrome.runtime.sendMessage({message: "Opened and saved window:",
-                    obj: newSave
-                });
+                windowsStorage[windowsStorage.findIndex(savedWindow)] = newWindow;
+                logEvent({message: "Opened and saved window:", obj: newWindow})
+                    .then(r => {
+                        console.log('Message successfully sent', r);
+                    })
+                    .catch(err => {
+                        console.error('Error occurred while sending message: ', err);
+                    });
                 saveStorage();
             });
         }
         else {
             // If the window is already open, you might want to focus on it or handle it differently.
             // You can add code here to focus on the existing window or handle this scenario.
-            chrome.runtime.sendMessage({ message: "Window is already open", obj: null});
+            logEvent({ message: "Window is already open", obj: null})
+                .then(r => {
+                    console.log('Message successfully sent', r);
+                })
+                .catch(err => {
+                    console.error('Error occurred while sending message: ', err);
+                });
 
             // If the window ID is valid, simply focus it
-            chrome.runtime.sendMessage({message: "Focusing window:", obj: windowIdToOpen}); // Log focusing window
-            chrome.windows.update(windowIdToOpen, { focused: true });
+            logEvent({message: "Focusing window:", obj: windowIdToOpen}) // Log focusing window
+                .then(r => {
+                    console.log('Message successfully sent', r);
+                })
+                .catch(err => {
+                    console.error('Error occurred while sending message: ', err);
+                });
+            chrome.windows.update(windowIdToOpen, { focused: true })
+                .then(r => {
+                    console.log('Update successful', r);
+                })
+                .catch(err => {
+                    console.error('Error occurred while opening window: ', err);
+                });
         }
     });
 }
@@ -156,12 +248,18 @@ function openSavedWindow(savedWindow) {
 function deleteSavedWindow(savedWindow) {
     loadStorage();
     // Find the index of the window to delete
-    const windowIndex = windowsStorage.findIndex((win) => win.windowId === savedWindow.windowId);
+    const windowIndex = fetchIndex(savedWindow.windowId)
 
     if (windowIndex !== -1) {
         // Remove the window from the saved windows list
         windowsStorage.splice(windowIndex, 1);
-        chrome.runtime.sendMessage({message: "Deleted window:", obj: savedWindow}); // Log deleted window
+        logEvent({message: "Deleted window:", obj: savedWindow}) // Log deleted window
+            .then(r => {
+                console.log('Message successfully sent', r);
+            })
+            .catch(err => {
+                console.error('Error occurred while sending message: ', err);
+            });
 
         saveStorage();
 
@@ -171,119 +269,98 @@ function deleteSavedWindow(savedWindow) {
 }
 
 // Monitor all form of events for tab creation, deletion, and other modifications
+chrome.tabs.onCreated.addListener(handleTabCreated);    //  callback => Tab object
+chrome.tabs.onZoomChange.addListener(zoomChangeInfo => handleTabId(zoomChangeInfo.tabId));  //  callback => ZoomChangeInfo object [ newZoomFactor, oldZoomFactor, tabId, zoomSettings ]
+chrome.tabs.onRemoved.addListener(handleTabId);    //  callback => tabId, removeInfo object [ isWindowClosing, windowId ]
+chrome.tabs.onAttached.addListener(handleTabId);  //  callback => tabId, attachInfo object [ newPosition, newWindowId ]
+chrome.tabs.onDetached.addListener(handleTabId);  //  callback => tabId, detachInfo object [ oldPosition, oldWindowId ]
+chrome.tabs.onMoved.addListener(handleTabId);        //  callback => tabId, moveInfo object [ fromIndex, toIndex, windowId ]
+chrome.tabs.onReplaced.addListener(handleTabId)   //  callback => addedTabId, removedTabId
+chrome.tabs.onUpdated.addListener(handleTabId);    //  callback => tabId, changeInfo object [ All Tab object info besides windowId ]
 
-chrome.tabs.onCreated.addListener(isSavedWindow);   //  callback => Tab object
-
-chrome.tabs.onRemoved.addListener(isSavedWindow);   //  callback => tabId, removeInfo object [ isWindowClosing, windowId ]
-
-// Needs to handle attachInfo object, just check if windowID is a saved window, recall saved window info and overwrite previous save
-chrome.tabs.onAttached.addListener(isSavedWindow);  //  callback => tabId, attachInfo object [ newPosition, newWindowId ]
-
-// Needs to handle detachInfo object, just check if windowID is a saved window, recall saved window info and overwrite previous save
-chrome.tabs.onDetached.addListener(isSavedWindow);  //  callback => tabId, detachInfo object [ oldPosition, oldWindowId ]
-
-// Needs to handle moveInfo object, just check if windowID is a saved window, recall saved window info and overwrite previous save
-chrome.tabs.onMoved.addListener(isSavedWindow);     //  callback => tabId, moveInfo object [ fromIndex, toIndex, windowId ]
-
-// SPECIAL LISTENER, THIS ONE IS IMPORTANT AS TAB ID'S CAN CONSTANTLY CHANGE DUE TO PRE-RENDERING, NEED TO HANDLE THIS
-chrome.tabs.onReplaced.addListener(isSavedWindow)   //  callback => addedTabId, removedTabId                                                                                    NOT SURE HOW IM SUPPOSED TO SOLVE GETTING THE TAB OBJECT OR WINDOW ID YET
-
-// Need to handle changeInfo object, just pull tab's windowID and then check if window is a saved window, recall saved window info and overwrite previous save
-chrome.tabs.onUpdated.addListener(isSavedWindow);   //  callback => tabId, changeInfo object [ All Tab object info besides windowId ]                                           NOT SURE HOW IM SUPPOSED TO SOLVE GETTING THE TAB OBJECT OR WINDOW ID YET
-
-// Provides ZoomChangeInfo object, take tabID and then grab windowID, then check if saved window, if so then overwrite previous save with new info
-chrome.tabs.onZoomChange.addListener(isSavedWindow) //  callback => ZoomChangeInfo object [ newZoomFactor, oldZoomFactor, tabId, zoomSettings ]                                 NOT SURE HOW IM SUPPOSED TO SOLVE GETTING THE TAB OBJECT OR WINDOW ID YET
-
-
-function isSavedWindow(windowId) {
-    if (windowId === 0) {
-        let variable = 0;
-    }
-}
-
-function
 
 function handleTabCreated(tab) {
-    loadStorage();
-    chrome.runtime.sendMessage({message: "Tab Created:", obj: tab.windowId})
-    // Find the index of the window to update
-    const windowIndex = windowsStorage.findIndex((win) => win.windowId === tab.windowId);
-    chrome.runtime.sendMessage({message: "Current window index for new tab:", obj: windowIndex});
-    if (windowIndex !== -1) {
-        // Update the window's tabs list
-        windowsStorage[windowIndex].tabs.push({ id: tab.id, windowId: tab.windowId, url: tab.url });
-        chrome.runtime.sendMessage({message: "Updated window:", obj: windowsStorage[windowIndex]}); // Log updated window
-
-        saveStorage();
-
-        // Update the displayed list of saved windows in the popup
-        updateWindowListUI();
-    }
-
-}
-
-// Monitor tab removal to update saved windows
-chrome.tabs.onRemoved.addListener(handleTabRemoved);
-
-function handleTabRemoved(tabId, removeInfo) {
-    loadStorage();
-
-    // Find the index of the window to update
-    const windowIndex = windowsStorage.findIndex((win) => win.windowId === removeInfo.windowId);
-
-    if (windowIndex !== -1) {
-        // Check if the tab being removed is in the saved window's tabs list
-        const tabIndex = windowsStorage[windowIndex].tabs.findIndex((tab) => tab.id === tabId);
-
-        if (tabIndex !== -1) {
-            // Remove the tab from the saved window's tabs list
-            windowsStorage[windowIndex].tabs.splice(tabIndex, 1);
-            chrome.runtime.sendMessage({message: "Updated window:", obj: windowsStorage[windowIndex]}); // Log updated window
-
-            saveStorage();
-
-            // Update the displayed list of saved windows in the popup
-            updateWindowListUI();
-        }
+    // Function to save the content if the tab's window is a saved window
+    if (isSavedWindow(tab.windowId)) {
+        fetchWindow(tab.windowId)
+            .then(window => overwriteWindow(window))
+            .catch(error => console.error('Error occurred while fetching Window: ', error));
     }
 }
 
-chrome.windows.onRemoved.addListener( function(windowId) {
-    let isSavedWindow = false
+function handleTabId(tabId) {
+    fetchTab(tabId)
+        .then(tab => {
+            if (isSavedWindow(tab.windowId)) {
+                fetchWindow(tab.windowId)
+                    .then(window => overwriteWindow(window))
+                    .catch(error => console.error('Error occurred while fetching Window: ', error));
+            }
+        })
+        .catch(error => {
+            logEvent({message: "Error occurred: ", obj: error})
+                .then(r => console.log('Message successfully sent', r))
+                .catch(err => console.error('Error occurred while sending message: ', err));
+        })
+}
 
-    chrome.runtime.sendMessage({message: "Window ID being closed:", obj: windowId});
+// Functions to perform tab modification updates
+function fetchTab(tabId) {
+    return new Promise((resolve, reject) => {
+        chrome.tabs.get(tabId, function(tab) {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError)
+            } else {
+                resolve(tab);
+            }
+        });
+    });
+}
 
-    // Loop through the windowsStorage array to check if the windowId exists
-    for (let i = 0; i < windowsStorage.length; i++) {
-        if (windowsStorage[i].windowId === windowId) {
-            isSavedWindow = true;
-            break;
-        }
-    }
+function isSavedWindow(windowId) {
+    let windowIndex = fetchIndex(windowId);
+    return windowIndex !== -1;
+}
+function fetchWindow(windowId) {
+    return new Promise((resolve, reject) => {
+        chrome.windows.get(windowId, {populate: true}, function (window) {
+            if (chrome.runtime.lastError) {
+                logEvent({message: "Error: ", obj: chrome.runtime.lastError})
+                    .then(r => {
+                        console.log('Message successfully sent', r);
+                    })
+                    .catch(err => {
+                        console.error('Error occurred while sending message: ', err);
+                    });
+                reject(chrome.runtime.lastError)
+            } else {
+                resolve(window);
+            }
+        });
+    });
+}
 
-    if (isSavedWindow) {
-        // Show a confirm dialog to the user
-        if (confirm("Do you want to save changes before closing?")) {
-            // Save changes before closing
-            saveStorage(function() {
-                // Close the window after saving
-                chrome.windows.remove(windowId, function() {
-                    chrome.runtime.sendMessage({message: "Window closed after saving.", obj: null});
-                });
-            });
-        } else {
-            // Close the window without saving
-            chrome.windows.remove(windowId, function() {
-                chrome.runtime.sendMessage({ message:"Window closed without saving.", obj: null});
-            });
-        }
-    }
-    // // Save changes before closing
-    // saveStorage(function () {
-    //     // Close the window after saving
-    //     chrome.windows.remove(windowId, function () {
-    //         console.log("Window closed after saving.");
-    //     });
-    // });
+function fetchIndex(windowId) {
+    let foundIndex = windowsStorage.findIndex((win) => win.id === windowId);
+    logEvent({message: "Found at index: ", obj: foundIndex})
+        .then(r => {
+            console.log('Message successfully sent', r);
+        })
+        .catch(err => {
+            console.error('Error occurred while sending message:', err);
+        });
+    return foundIndex;
+}
 
-})
+function overwriteWindow(window) {
+    const windowIndex = fetchIndex(window.id);
+    windowsStorage[windowIndex] = window;
+    logEvent({message:"Overwrite on saved window ", obj: window})
+        .then(r => {
+            console.log('Message successfully sent', r);
+        })
+        .catch(err => {
+            console.error('Error occurred while sending message: ', err);
+        });
+    saveStorage();
+}
